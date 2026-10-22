@@ -12,7 +12,7 @@ services:
 
     # Bind to localhost only; do not expose PostgreSQL publicly by default.
     ports:
-      - "127.0.0.1:${POSTGRES_PORT}:5432"
+      - "${POSTGRES_PORT}:5432"
 
     # PostgreSQL 16 stores its data under /var/lib/postgresql/data.
     volumes:
