@@ -59,44 +59,7 @@ Check PostgreSQL version:
 docker compose exec postgres psql -U rag_user -d ragdb -c "SELECT version();"
 ```
 
-## Example vector table
-
-Replace `1536` with the output dimension of your embedding model:
-
-```sql
-CREATE TABLE IF NOT EXISTS document_chunks (
-    id          BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    document_id TEXT NOT NULL,
-    chunk_text  TEXT NOT NULL,
-    metadata    JSONB NOT NULL DEFAULT '{}'::jsonb,
-    embedding   VECTOR(3) NOT NULL,
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
--- This is a 3-dimensional example. Replace VECTOR(3) with the output dimension of your embedding model.
--- Cosine-distance HNSW index; create after there is enough data to index.
-CREATE INDEX IF NOT EXISTS document_chunks_embedding_hnsw_idx
-    ON document_chunks USING hnsw (embedding vector_cosine_ops);
-
-CREATE INDEX IF NOT EXISTS document_chunks_metadata_gin_idx
-    ON document_chunks USING gin (metadata);
-```
-
-Cosine similarity search uses the cosine-distance operator `<=>`:
-
-```sql
-SELECT id, document_id, chunk_text, metadata,
-       1 - (embedding <=> '[0.1, 0.2, 0.3]'::vector) AS cosine_similarity
-FROM document_chunks
-ORDER BY embedding <=> '[0.1, 0.2, 0.3]'::vector
-LIMIT 5;
-```
-
-The example uses three dimensions so the sample query runs as written. Replace the dimension with your embedding model's output dimension, and ensure query embeddings use that same dimension.
-
 ## Stop / remove
 
 - Stop services but keep data: `docker compose down`
 - **Destructive:** remove the database volume too: `docker compose down -v`
-
-Do not expose port 5432 to public interfaces without planning network restrictions, authentication, TLS, backups and monitoring. This setup is intended as a development starting point, not a complete production deployment.
